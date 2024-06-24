@@ -3,6 +3,7 @@ const app = express();
 const port = 4000;
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
+const session = require("express-session");
 const bcrypt = require("bcryptjs");
 const salt = bcrypt.genSaltSync(10);
 const Razorpay = require("razorpay");
@@ -11,9 +12,18 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const jwt_secret = process.env.JWT_SECRET;
 const secret = `${jwt_secret}`;
+//middleware
 app.set("view engine", "ejs");
+app.use(express.static(__dirname + "/public"));
 app.use(bodyParser.urlencoded({ extended: true }));
-
+app.use(
+  session({
+    secret: "your-session-secret",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+// mongo connection
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -25,6 +35,7 @@ mongoose
   .catch((err) => {
     console.error("Error connecting to MongoDB:", err);
   });
+//razorpay connection
 var instance = new Razorpay({
   key_id: process.env.KeyID,
   key_secret: process.env.KeySecret,
@@ -36,6 +47,34 @@ app.get("/auth/signup", (req, res) => {
 });
 
 app.post("/auth/signup", async (req, res) => {
+  try {
+    // Create Razorpay order
+    var options = {
+      amount: 2000000,
+      currency: "INR",
+      receipt: "order_rcptid_11",
+    };
+
+    // Create order using Razorpay instance
+    instance.orders.create(options, async (err, order) => {
+      if (err) {
+        console.error("Error creating Razorpay order:", err);
+        res.status(500).send("Error creating payment order");
+        return;
+      }
+
+      res.render("pay", {
+        key: instance.key_id,
+        order_id: options.id,
+      });
+    });
+  } catch (err) {
+    res.status(400).send("Error creating Razorpay order: " + err.message);
+  }
+});
+
+//payment
+app.post("/payment/success", async (req, res) => {
   const { name, username, password, email, mobile, petroleumName, location } =
     req.body;
   try {
@@ -48,23 +87,12 @@ app.post("/auth/signup", async (req, res) => {
       petroleumName,
       location,
     });
-    res.render("login");
-  } catch (err) {
-    res.status(400).send("Error registering user: " + err.message);
+    res.redirect("/auth/login");
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ error: "Failed to register" });
   }
-});
-//payment
-app.get("/payment", (req, res) => {
-  var options = {
-    amount: 2000000,
-    currency: "INR",
-    receipt: "order_rcptid_11",
-  };
-  const order = instance.orders.create(options);
-  res.render("pay", {
-    key: instance.key_id,
-    order_id: order.id,
-  });
+  res.redirect("/auth/login");
 });
 
 //login
@@ -85,11 +113,28 @@ app.post("/auth/login", async (req, res) => {
   if (passOk) {
     jwt.sign({ username, id: user._id }, secret, {}, (err, token) => {
       if (err) throw err;
-      res.cookie("token", token).render("home");
+      res.cookie("token", token).redirect("/auth/home");
     });
   } else {
     res.status(400).send("Password or username is wrong");
   }
+});
+
+//home
+app.get("/auth/home", (req, res) => {
+  res.render("home");
+});
+
+//logout
+app.post("/auth/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Error destroying session:", err);
+      res.status(500).send("Error logging out");
+      return;
+    }
+    res.redirect("/auth/login");
+  });
 });
 
 app.listen(port, () => {
