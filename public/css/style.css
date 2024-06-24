@@ -1,0 +1,144 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: black;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.signup-container {
+  display: flex;
+  width: 80%;
+  max-width: 900px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.signup-box {
+  background-color: black;
+  color: rgb(245, 249, 253);
+  display: flex;
+  flex: 1;
+  padding: 20px;
+  border: 2px solid seashell;
+  border-radius: 5px;
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: center;
+}
+
+form {
+  width: 80%;
+  font-size: 0.8rem;
+}
+
+.image-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
+}
+
+.image-container img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  margin-left: 10px;
+  background-color: #c2260b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #6f0a0a;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .signup-container {
+    flex-direction: column;
+  }
+
+  .image-container {
+    display: none;
+  }
+  form {
+    width: 70%;
+    font-size: small;
+  }
+  label {
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+
+  input {
+    padding: 8px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+}
+
+/* payment page */
+
+/* Style the Razorpay button */
+.payment-box p {
+  color: #ccc;
+}
+.payment-box span {
+  color: red;
+}
+#rzp-button1 {
+  border: none;
+  padding: 15px 30px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  background-color: #333;
+  color: #f00;
+  border-radius: 5px;
+  text-transform: uppercase;
+}
+
+/* Responsive behavior for different screen sizes */
+@media (max-width: 768px) {
+  #rzp-button1 {
+    font-size: 14px;
+    padding: 12px 20px;
+  }
+  .payment-box {
+    font-size: small;
+  }
+}
+
+#rzp-button1:hover {
+  background-color: #444;
+}
