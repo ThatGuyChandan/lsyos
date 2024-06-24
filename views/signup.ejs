@@ -3,53 +3,58 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="/css/style.css" rel="stylesheet" type="text/css" />
     <title>Signup</title>
   </head>
   <body>
-    <form action="/auth/signup" method="post">
-      <label for="name">Name:</label>
-      <input type="text" id="name" name="name" required minlength="4" /><br />
+    <div class="signup-box">
+      <form action="/auth/signup" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required minlength="4" /><br />
 
-      <label for="username">Username:</label>
-      <input
-        type="text"
-        id="username"
-        name="username"
-        required
-        minlength="4"
-      /><br />
+        <label for="username">Username:</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          required
+          minlength="4"
+        /><br />
 
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" required /><br />
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required /><br />
 
-      <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required /><br />
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required /><br />
 
-      <label for="mobile">Mobile:</label>
-      <input
-        type="text"
-        id="mobile"
-        name="mobile"
-        required
-        pattern="\d{10}"
-        title="Please enter a valid 10-digit mobile number"
-      /><br />
+        <label for="mobile">Mobile:</label>
+        <input
+          type="text"
+          id="mobile"
+          name="mobile"
+          required
+          pattern="\d{10}"
+          title="Please enter a valid 10-digit mobile number"
+        /><br />
 
-      <label for="petroleumName">Petroleum Name:</label>
-      <input
-        type="text"
-        id="petroleumName"
-        name="petroleumName"
-        required
-        minlength="4"
-      /><br />
+        <label for="petroleumName">Petroleum Name:</label>
+        <input
+          type="text"
+          id="petroleumName"
+          name="petroleumName"
+          required
+          minlength="4"
+        /><br />
 
-      <label for="location">Location:</label>
-      <input type="text" id="location" name="location" required /><br />
+        <label for="location">Location:</label>
+        <input type="text" id="location" name="location" required /><br />
 
-      <button type="submit">Signup</button>
-    </form>
+        <button type="submit">Signup</button>
+      </form>
+    </div>
+
+    <div class="image-container">
+      <img src="/assets/socialMedia.jpg" alt="image not found" />
+    </div>
   </body>
 </html>
-
-<!-- // name, username, password, email, mobile, petroleum name, location -->
