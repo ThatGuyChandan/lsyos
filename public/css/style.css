@@ -8,12 +8,22 @@ html {
 /* signup/login */
 .signup-box {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f0f0f0;
+  /* background-color: #c6eaf4e4; */
+  background: rgb(200, 247, 244);
+  background: linear-gradient(
+    0deg,
+    rgba(200, 247, 244, 0.947075208913649) 0%,
+    rgba(247, 255, 255, 0.9484679665738162) 100%
+  );
 }
-
+.signup-box h1 {
+  text-align: center;
+  color: #4caf50;
+}
 .box {
   background-color: #fff;
   padding: 30px;
@@ -68,6 +78,8 @@ button[type="submit"]:hover {
   display: flex;
   justify-content: center;
   align-items: center;
+  /* filter: blur(8px);
+  -webkit-filter: blur(8px); */
 }
 .payment-box {
   display: flex;
