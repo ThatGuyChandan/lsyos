@@ -1,29 +1,34 @@
 const express = require("express");
 const app = express();
-const port = 4000;
+const port = 4000 || process.env.PORT;
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const bcrypt = require("bcryptjs");
 const salt = bcrypt.genSaltSync(10);
 const Razorpay = require("razorpay");
+const crypto = require("crypto");
 const User = require("./models/user");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const jwt_secret = process.env.JWT_SECRET;
 const secret = `${jwt_secret}`;
-//middleware
+
+// Middleware
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(
   session({
-    secret: "your-session-secret",
+    secret: process.env.sessionSecret,
     resave: false,
     saveUninitialized: true,
   })
 );
-// mongo connection
+
+// MongoDB connection
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -35,18 +40,28 @@ mongoose
   .catch((err) => {
     console.error("Error connecting to MongoDB:", err);
   });
-//razorpay connection
+
+// Razorpay connection
 var instance = new Razorpay({
   key_id: process.env.KeyID,
   key_secret: process.env.KeySecret,
 });
 
-//signup
+// Signup
 app.get("/auth/signup", (req, res) => {
   res.render("signup");
 });
 
 app.post("/auth/signup", async (req, res) => {
+  const { username, email } = req.body;
+
+  // Check if the user already exists
+  const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+
+  if (existingUser) {
+    res.redirect("/auth/login");
+    return;
+  }
   try {
     // Create Razorpay order
     var options = {
@@ -55,17 +70,18 @@ app.post("/auth/signup", async (req, res) => {
       receipt: "order_rcptid_11",
     };
 
-    // Create order using Razorpay instance
-    instance.orders.create(options, async (err, order) => {
+    instance.orders.create(options, (err, order) => {
       if (err) {
         console.error("Error creating Razorpay order:", err);
         res.status(500).send("Error creating payment order");
         return;
       }
+      req.session.order_id = order.id;
+      req.session.userDetails = req.body;
 
       res.render("pay", {
         key: instance.key_id,
-        order_id: options.id,
+        order_id: order.id,
       });
     });
   } catch (err) {
@@ -73,11 +89,27 @@ app.post("/auth/signup", async (req, res) => {
   }
 });
 
-//payment
-app.post("/payment/success", async (req, res) => {
-  const { name, username, password, email, mobile, petroleumName, location } =
+// Payment success
+app.post("/auth/payment/success", async (req, res) => {
+  const { razorpay_payment_id, razorpay_order_id, razorpay_signature } =
     req.body;
+
+  // Verify payment signature to ensure payment is successful
+  const generated_signature = crypto
+    .createHmac("sha256", process.env.KeySecret)
+    .update(razorpay_order_id + "|" + razorpay_payment_id)
+    .digest("hex");
+
+  if (generated_signature !== razorpay_signature) {
+    return res.status(400).send("Payment verification failed");
+  }
+
+  const userDetails = req.session.userDetails;
+
   try {
+    const { name, username, password, email, mobile, petroleumName, location } =
+      userDetails;
+
     const user = await User.create({
       name,
       username,
@@ -87,18 +119,19 @@ app.post("/payment/success", async (req, res) => {
       petroleumName,
       location,
     });
+    req.session.userDetails = null; // Clear user details from session
     res.redirect("/auth/login");
   } catch (error) {
     console.error(error);
-    res.status(400).json({ error: "Failed to register" });
+    res.status(400).send("Failed to register user");
   }
-  res.redirect("/auth/login");
 });
 
-//login
+// Login
 app.get("/auth/login", (req, res) => {
   res.render("login");
 });
+
 app.post("/auth/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -120,12 +153,15 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-//home
+// Home
 app.get("/auth/home", (req, res) => {
-  res.render("home");
+  const { name } = req.body;
+  res.render("home", {
+    name: name,
+  });
 });
 
-//logout
+// Logout
 app.post("/auth/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -133,6 +169,7 @@ app.post("/auth/logout", (req, res) => {
       res.status(500).send("Error logging out");
       return;
     }
+    res.clearCookie("token");
     res.redirect("/auth/login");
   });
 });
