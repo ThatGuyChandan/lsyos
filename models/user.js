@@ -31,6 +31,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
   },
   location: { type: String, required: true, trim: true },
+  paymentStatus: { type: Boolean, default: false },
 });
 const userModel = mongoose.model("user", userSchema);
 

@@ -58,7 +58,6 @@ input[type="tel"]:focus {
   outline: none;
 }
 
-/* Style the submit button */
 button[type="submit"] {
   background-color: #4caf50;
   color: white;
@@ -72,7 +71,9 @@ button[type="submit"] {
 button[type="submit"]:hover {
   background-color: #3e8e41;
 }
-
+.login-link a {
+  color: red;
+}
 /* payment page */
 .pay-box {
   display: flex;
@@ -104,7 +105,7 @@ button[type="submit"]:hover {
 }
 
 #rzp-button1 {
-  background-color: #4caf50; /* Green */
+  background-color: #4caf50;
   color: white;
   padding: 10px 20px;
   border: none;

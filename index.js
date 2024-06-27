@@ -53,62 +53,9 @@ app.get("/auth/signup", (req, res) => {
 });
 
 app.post("/auth/signup", async (req, res) => {
-  const { username, email } = req.body;
-
-  // Check if the user already exists
-  const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-
-  if (existingUser) {
-    res.redirect("/auth/login");
-    return;
-  }
-  try {
-    // Create Razorpay order
-    var options = {
-      amount: 2000000,
-      currency: "INR",
-      receipt: "order_rcptid_11",
-    };
-
-    instance.orders.create(options, (err, order) => {
-      if (err) {
-        console.error("Error creating Razorpay order:", err);
-        res.status(500).send("Error creating payment order");
-        return;
-      }
-      req.session.order_id = order.id;
-      req.session.userDetails = req.body;
-
-      res.render("pay", {
-        key: instance.key_id,
-        order_id: order.id,
-      });
-    });
-  } catch (err) {
-    res.status(400).send("Error creating Razorpay order: " + err.message);
-  }
-});
-
-// Payment success
-app.post("/auth/payment/success", async (req, res) => {
-  const { razorpay_payment_id, razorpay_order_id, razorpay_signature } =
-    req.body;
-
-  // Verify payment signature to ensure payment is successful
-  const generated_signature = crypto
-    .createHmac("sha256", process.env.KeySecret)
-    .update(razorpay_order_id + "|" + razorpay_payment_id)
-    .digest("hex");
-
-  if (generated_signature !== razorpay_signature) {
-    return res.status(400).send("Payment verification failed");
-  }
-
-  const userDetails = req.session.userDetails;
-
   try {
     const { name, username, password, email, mobile, petroleumName, location } =
-      userDetails;
+      req.body;
 
     const user = await User.create({
       name,
@@ -119,11 +66,63 @@ app.post("/auth/payment/success", async (req, res) => {
       petroleumName,
       location,
     });
-    req.session.userDetails = null; // Clear user details from session
-    res.redirect("/auth/login");
+
+    // Create Razorpay order
+    var options = {
+      amount: 2000000,
+      currency: "INR",
+      receipt: `order_rcptid_${user._id}`,
+    };
+
+    instance.orders.create(options, (err, order) => {
+      if (err) {
+        console.error("Error creating Razorpay order:", err);
+        res.status(500).send("Error creating payment order");
+        return;
+      }
+      req.session.userDetails = req.body;
+      req.session.order_id = order.id;
+      res.render("pay", {
+        key: process.env.KeyID,
+        order_id: order.id,
+      });
+    });
   } catch (error) {
     console.error(error);
     res.status(400).send("Failed to register user");
+  }
+});
+
+// Payment success
+
+app.post("/auth/payment", async (req, res) => {
+  try {
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } =
+      req.body;
+
+    // Verify payment signature to ensure security
+    const shasum = crypto.createHmac("sha256", process.env.KeySecret);
+    shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const digest = shasum.digest("hex");
+    const userDetails = req.session.userDetails;
+    const { username } = userDetails;
+    // console.log(username);
+
+    if (digest === razorpay_signature) {
+      await User.updateOne(
+        { username: username },
+        {
+          $set: {
+            paymentStatus: true,
+          },
+        }
+      );
+      res.render("sucess");
+    } else {
+      res.status(400).send("Invalid payment signature");
+    }
+  } catch (err) {
+    res.status(400).send("Error processing payment: " + err.message);
   }
 });
 
@@ -133,7 +132,7 @@ app.get("/auth/login", (req, res) => {
 });
 
 app.post("/auth/login", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, paymentStatus } = req.body;
 
   const user = await User.findOne({ username });
 
@@ -141,15 +140,23 @@ app.post("/auth/login", async (req, res) => {
     res.status(400).send("User not found");
     return;
   }
-
   const passOk = bcrypt.compareSync(password, user.password);
-  if (passOk) {
+  if (!passOk) {
+    res.status(400).send("Password or username is wrong");
+    return;
+  }
+
+  const orderId = req.session.order_id;
+  if (!user.paymentStatus) {
+    res.render("pay", {
+      key: process.env.KeyID,
+      order_id: orderId,
+    });
+  } else {
     jwt.sign({ username, id: user._id }, secret, {}, (err, token) => {
       if (err) throw err;
       res.cookie("token", token).redirect("/auth/home");
     });
-  } else {
-    res.status(400).send("Password or username is wrong");
   }
 });
 
